@@ -12,7 +12,8 @@ def init_db(db_file):
             action TEXT,
             target TEXT,
             time TEXT,
-            json_blob TEXT
+            json_blob TEXT,
+            processed INTEGER DEFAULT 0
         )
     """)
     conn.commit()

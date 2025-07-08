@@ -1,3 +1,4 @@
+import time
 import os
 from dotenv import load_dotenv
 from gitlab.create_gitlab_notifications_db import init_db
@@ -10,13 +11,15 @@ db_file = os.getenv("GITLAB_NOTIFICATIONS_DB_FILE")
 
 
 def main():
-    init_db(db_file)
+    while True:
+        init_db(db_file)
 
-    # Try out any module, e.g.:
-    poll_once_and_save_events(db_file, seen_ids=None)
+        # Try out any module, e.g.:
+        poll_once_and_save_events(db_file, seen_ids=None)
 
-    # Parameter here is how far back in hours to get notifications
-    poll_and_create_todoist_tasks(2)
+        # Parameter here is how far back in hours to get notifications
+        poll_and_create_todoist_tasks(2)
+        time.sleep(60)
 
 
 if __name__ == "__main__":

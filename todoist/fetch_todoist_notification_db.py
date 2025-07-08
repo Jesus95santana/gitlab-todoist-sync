@@ -9,6 +9,14 @@ from linux.notify_gitlab_event import notify_gitlab_event
 load_dotenv()
 
 
+def prettify_timestamp(timestr):
+    try:
+        dt = datetime.fromisoformat(timestr.replace("Z", "+00:00"))
+        return dt.strftime("%-m/%-d/%y %-I:%M%p")
+    except Exception:
+        return timestr
+
+
 def poll_and_create_todoist_tasks(TimeHours):
     db_file = os.getenv("GITLAB_NOTIFICATIONS_DB_FILE")
     project_name = os.getenv("TODOIST_NOTIFICATION_PROJECT_NAME")
@@ -23,21 +31,25 @@ def poll_and_create_todoist_tasks(TimeHours):
     conn = sqlite3.connect(db_file)
     c = conn.cursor()
     one_hour_ago = (datetime.now(timezone.utc) - timedelta(hours=TimeHours)).isoformat()
-    c.execute("SELECT id, project, user, action, target, time FROM events WHERE time >= ? ORDER BY time ASC", (one_hour_ago,))
+    c.execute("SELECT id, project, user, action, target, time FROM events WHERE time >= ? AND processed=0 ORDER BY time ASC", (one_hour_ago,))
     rows = c.fetchall()
-    conn.close()
 
-    print(f"Found {len(rows)} notification(s) in the last hour(s).")
+    print(f"Found {len(rows)} unprocessed notification(s) in the last {TimeHours} hour(s).")
 
     for row in rows:
         event_id, project_name, user, action, target, event_time = row
-        content = f"{project_name}: {user} {action} {target} [{event_time}]"
-        # Optional: set priority, labels, etc
+        pretty_time = prettify_timestamp(event_time)
+        content = f"{project_name}: {user} {action} {target} [{pretty_time}]"
         task = create_task(
             content=content,
             project_id=project_id,
-            priority=3,  # Example default
-            # labels=[...], etc.
+            priority=3,
         )
         notify_gitlab_event()
         print(f"Created Todoist task for event {event_id}")
+
+        # Mark as processed
+        c.execute("UPDATE events SET processed=1 WHERE id=?", (event_id,))
+        conn.commit()
+
+    conn.close()

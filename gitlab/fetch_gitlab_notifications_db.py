@@ -17,7 +17,11 @@ def save_event(event, project, db_file):
             project["path_with_namespace"],
             event["author"]["username"],
             event["action_name"],
-            event.get("target_title") or event.get("target_type"),
+            (
+                event["push_data"]["ref"]
+                if event["action_name"] in ["pushed to", "deleted"] and "push_data" in event and event["push_data"] and "ref" in event["push_data"]
+                else event.get("target_title") or event.get("target_type")
+            ),
             event["created_at"],
             json.dumps(event),
         ),

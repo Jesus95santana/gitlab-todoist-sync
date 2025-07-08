@@ -52,7 +52,12 @@ def main():
                     if event["id"] not in sid:
                         user = event["author"]["username"]
                         action = event["action_name"]
-                        target = event.get("target_title") or event.get("target_type")
+                        if action in ["pushed to", "deleted"]:
+                            # Use branch/tag name from push_data.ref if present
+                            push_data = event.get("push_data") or {}
+                            target = push_data.get("ref") or ""
+                        else:
+                            target = event.get("target_title") or event.get("target_type") or ""
                         print(f"[{project['path_with_namespace']}] [{event['created_at']}] {user}: {action} {target}")
                         sid.add(event["id"])
             print("Waiting for next poll...")

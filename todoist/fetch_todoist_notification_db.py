@@ -4,11 +4,12 @@ from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 from .create_todoist_task import create_task
 from .create_todoist_project import get_project_by_name, create_project
+from linux.notify_gitlab_event import notify_gitlab_event
 
 load_dotenv()
 
 
-def poll_and_create_todoist_tasks():
+def poll_and_create_todoist_tasks(TimeHours):
     db_file = os.getenv("GITLAB_NOTIFICATIONS_DB_FILE")
     project_name = os.getenv("TODOIST_NOTIFICATION_PROJECT_NAME")
 
@@ -21,12 +22,12 @@ def poll_and_create_todoist_tasks():
     # Connect to DB and select notifications from last hour
     conn = sqlite3.connect(db_file)
     c = conn.cursor()
-    one_hour_ago = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
+    one_hour_ago = (datetime.now(timezone.utc) - timedelta(hours=TimeHours)).isoformat()
     c.execute("SELECT id, project, user, action, target, time FROM events WHERE time >= ? ORDER BY time ASC", (one_hour_ago,))
     rows = c.fetchall()
     conn.close()
 
-    print(f"Found {len(rows)} notifications in the last hour.")
+    print(f"Found {len(rows)} notification(s) in the last hour(s).")
 
     for row in rows:
         event_id, project_name, user, action, target, event_time = row
@@ -38,4 +39,5 @@ def poll_and_create_todoist_tasks():
             priority=3,  # Example default
             # labels=[...], etc.
         )
+        notify_gitlab_event()
         print(f"Created Todoist task for event {event_id}")

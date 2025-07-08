@@ -14,7 +14,9 @@ def main():
 
     # Try out any module, e.g.:
     poll_once_and_save_events(db_file, seen_ids=None)
-    poll_and_create_todoist_tasks()
+
+    # Parameter here is how far back in hours to get notifications
+    poll_and_create_todoist_tasks(2)
 
 
 if __name__ == "__main__":

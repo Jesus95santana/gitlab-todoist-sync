@@ -2,6 +2,7 @@ import os
 import requests
 import time
 from dotenv import load_dotenv
+from datetime import datetime, timezone, timedelta  # Added for time filtering
 
 # === Load environment variables ===
 load_dotenv()
@@ -45,20 +46,25 @@ def main():
 
     while True:
         try:
+            now = datetime.now(timezone.utc)  # Current UTC time
             for project in projects:
                 events = get_project_events(project["id"])
                 for event in events:
                     sid = seen_ids[project["id"]]
                     if event["id"] not in sid:
-                        user = event["author"]["username"]
-                        action = event["action_name"]
-                        if action in ["pushed to", "deleted"]:
-                            # Use branch/tag name from push_data.ref if present
-                            push_data = event.get("push_data") or {}
-                            target = push_data.get("ref") or ""
-                        else:
-                            target = event.get("target_title") or event.get("target_type") or ""
-                        print(f"[{project['path_with_namespace']}] [{event['created_at']}] {user}: {action} {target}")
+                        # Parse created_at as UTC datetime
+                        event_time = datetime.fromisoformat(event["created_at"].replace("Z", "+00:00"))
+                        # Only process events from the last 2 hours
+                        if (now - event_time) <= timedelta(hours=2):
+                            user = event["author"]["username"]
+                            action = event["action_name"]
+                            if action in ["pushed to", "deleted"]:
+                                print("\nDEBUG EVENT:", event, "\n")
+                                push_data = event.get("push_data") or {}
+                                target = push_data.get("ref") or ""
+                            else:
+                                target = event.get("target_title") or event.get("target_type") or ""
+                            print(f"[{project['path_with_namespace']}] [{event['created_at']}] {user}: {action} {target}")
                         sid.add(event["id"])
             print("Waiting for next poll...")
         except Exception as e:

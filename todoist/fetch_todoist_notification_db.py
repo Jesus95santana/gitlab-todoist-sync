@@ -1,6 +1,7 @@
 import os
 import sqlite3
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 from .create_todoist_task import create_task
 from .create_todoist_project import get_project_by_name, create_project
@@ -11,8 +12,11 @@ load_dotenv()
 
 def prettify_timestamp(timestr):
     try:
+        # Parse UTC time
         dt = datetime.fromisoformat(timestr.replace("Z", "+00:00"))
-        return dt.strftime("%-m/%-d/%y %-I:%M%p")
+        # Convert to New York time (handles EST/EDT)
+        dt = dt.astimezone(ZoneInfo("America/New_York"))
+        return dt.strftime("%-m/%-d/%y %-I:%M%p %Z")
     except Exception:
         return timestr
 

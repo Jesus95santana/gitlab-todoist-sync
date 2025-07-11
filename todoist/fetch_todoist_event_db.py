@@ -74,7 +74,7 @@ def poll_and_create_todoist_event_tasks(TimeHours):
         content = f"[{kind_label}][{thread_label}] {project_name}"
 
         # Task description: everything else
-        description = f"{parent_title}: {author}: {body} [{pretty_time}]"
+        description = f"{parent_title}:\n{body}\n[{pretty_time}]"
 
         # --- Branch label logic ---
         branch_only = extract_branch_name(parent_title, body)

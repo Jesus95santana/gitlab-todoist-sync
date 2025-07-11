@@ -1,6 +1,7 @@
 import os
 import sqlite3
 import re
+import json
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
@@ -24,9 +25,7 @@ def prettify_timestamp(timestr):
 def extract_branch_name(parent_title, body=None):
     """
     Attempts to extract a branch name from the parent_title.
-    Customize the regex or logic as needed for your MR titles.
     """
-    # Try to find after "Draft: " or last slash for MR titles like "Draft: feature/branch-name"
     match = re.search(r"Draft:\s*([^\s/]+\/[^\s]+)", parent_title)
     if match:
         return match.group(1)
@@ -47,13 +46,13 @@ def poll_and_create_todoist_event_tasks(TimeHours):
         project = create_project(project_name)
     project_id = project["id"]
 
-    # Connect to DB and select unprocessed events from the last N hours
+    # Connect to DB and select unprocessed USER events from the last N hours
     conn = sqlite3.connect(db_file)
     c = conn.cursor()
     time_limit = (datetime.now(timezone.utc) - timedelta(hours=TimeHours)).isoformat()
     c.execute(
         """
-        SELECT id, project, kind, parent_title, author, is_thread, created_at, body
+        SELECT id, project, kind, parent_title, author, is_thread, created_at, body, json_blob
         FROM events
         WHERE created_at >= ? AND processed=0
         ORDER BY created_at ASC
@@ -65,7 +64,20 @@ def poll_and_create_todoist_event_tasks(TimeHours):
     print(f"Found {len(rows)} unprocessed event(s) in the last {TimeHours} hour(s).")
 
     for row in rows:
-        event_id, project_name, kind, parent_title, author, is_thread, created_at, body = row
+        event_id, project_name, kind, parent_title, author, is_thread, created_at, body, json_blob = row
+
+        # Load the raw note JSON for user/system check
+        note_data = {}
+        try:
+            note_data = json.loads(json_blob)
+        except Exception:
+            pass
+
+        # ---- Only handle USER notes (not system) ----
+        if note_data.get("system", False):
+            # System note: skip
+            continue
+
         pretty_time = prettify_timestamp(created_at)
         thread_label = "THREAD" if is_thread else "COMMENT"
         kind_label = "MR" if kind == "mr" else "ISSUE"
@@ -73,7 +85,7 @@ def poll_and_create_todoist_event_tasks(TimeHours):
         # Task title: concise, just meta and branch/project
         content = f"[{kind_label}][{thread_label}] {project_name}"
 
-        # Task description: everything else
+        # Task description: everything else, keep markdown/code formatting
         description = f"{parent_title}:\n{body}\n[{pretty_time}]"
 
         # --- Branch label logic ---
@@ -88,6 +100,7 @@ def poll_and_create_todoist_event_tasks(TimeHours):
             if label:
                 label_names = [branch_name]
 
+        # Only create Todoist task for user notes
         task = create_task(content=content, project_id=project_id, priority=4 if is_thread else 3, description=description, labels=label_names)
         notify_gitlab_event()
         print(f"Created Todoist task for event {event_id} (label: {branch_name if branch_name else 'none'})")

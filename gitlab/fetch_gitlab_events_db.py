@@ -84,8 +84,9 @@ def get_issue_notes(project_id, issue_iid):
 
 def poll_once_and_save_events(db_file, seen_ids=None):
     """
-    Polls GitLab for MR/issue comments (events), saves new notes to db_file,
+    Polls GitLab for MR/issue comments (events), saves new user notes to db_file,
     and returns a list of new notes (for notification, etc).
+    Only user comments or user-created threads are saved. System notes are skipped.
     """
     projects = get_my_projects()
     new_events = []
@@ -101,7 +102,8 @@ def poll_once_and_save_events(db_file, seen_ids=None):
             if key not in seen_ids:
                 seen_ids[key] = set()
             for note in notes:
-                if note["id"] not in seen_ids[key]:
+                # Only allow user notes (not system notes)
+                if note["id"] not in seen_ids[key] and not note.get("system", False):
                     save_event(note, project, "mr", mr["title"], db_file)
                     new_events.append((note, project, "mr", mr["title"]))
                     seen_ids[key].add(note["id"])
@@ -112,7 +114,8 @@ def poll_once_and_save_events(db_file, seen_ids=None):
             if key not in seen_ids:
                 seen_ids[key] = set()
             for note in notes:
-                if note["id"] not in seen_ids[key]:
+                # Only allow user notes (not system notes)
+                if note["id"] not in seen_ids[key] and not note.get("system", False):
                     save_event(note, project, "issue", issue["title"], db_file)
                     new_events.append((note, project, "issue", issue["title"]))
                     seen_ids[key].add(note["id"])

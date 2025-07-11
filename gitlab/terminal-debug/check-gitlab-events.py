@@ -75,12 +75,15 @@ def main():
                     notes = get_mr_notes(project["id"], mr["iid"])
                     sid = seen_note_ids[(project["id"], "mr")]
                     for note in notes:
-                        if note["id"] not in sid:
+                        # Only user-generated notes (ignore system=True)
+                        if note["id"] not in sid and not note.get("system", False):
                             note_time = datetime.fromisoformat(note["created_at"].replace("Z", "+00:00"))
                             if (now - note_time) <= timedelta(hours=2):
-                                is_thread = bool(note.get("discussion_id") and note.get("position"))
+                                # Is it a thread (DiscussionNote) or just a comment?
+                                is_thread = note.get("type") == "DiscussionNote"
                                 print(
-                                    f"[MR][{project['path_with_namespace']}] [{mr['title']}] [{note['created_at']}] {note['author']['username']}: {'THREAD' if is_thread else 'COMMENT'} - {note['body']}"
+                                    f"[MR][{project['path_with_namespace']}] [{mr['title']}] [{note['created_at']}] {note['author']['username']}: "
+                                    f"{'THREAD' if is_thread else 'COMMENT'} - {note['body']}"
                                 )
                             sid.add(note["id"])
                 # Issues
@@ -89,12 +92,13 @@ def main():
                     notes = get_issue_notes(project["id"], issue["iid"])
                     sid = seen_note_ids[(project["id"], "issue")]
                     for note in notes:
-                        if note["id"] not in sid:
+                        if note["id"] not in sid and not note.get("system", False):
                             note_time = datetime.fromisoformat(note["created_at"].replace("Z", "+00:00"))
                             if (now - note_time) <= timedelta(hours=2):
-                                is_thread = bool(note.get("discussion_id") and note.get("position"))
+                                is_thread = note.get("type") == "DiscussionNote"
                                 print(
-                                    f"[ISSUE][{project['path_with_namespace']}] [{issue['title']}] [{note['created_at']}] {note['author']['username']}: {'THREAD' if is_thread else 'COMMENT'} - {note['body']}"
+                                    f"[ISSUE][{project['path_with_namespace']}] [{issue['title']}] [{note['created_at']}] {note['author']['username']}: "
+                                    f"{'THREAD' if is_thread else 'COMMENT'} - {note['body']}"
                                 )
                             sid.add(note["id"])
             print("Waiting for next poll...")

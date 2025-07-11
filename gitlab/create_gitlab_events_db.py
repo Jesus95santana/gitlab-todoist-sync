@@ -12,7 +12,7 @@ def init_db(db_file):
             parent_title TEXT,
             author TEXT,
             body TEXT,
-            is_thread INTEGER,
+            is_thread INTEGER, -- 0 = comment, 1 = thread
             created_at TEXT,
             json_blob TEXT,
             processed INTEGER DEFAULT 0

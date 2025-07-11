@@ -14,7 +14,8 @@ def init_db(db_file):
             body TEXT,
             is_thread INTEGER,
             created_at TEXT,
-            json_blob TEXT
+            json_blob TEXT,
+            processed INTEGER DEFAULT 0
         )
     """)
     conn.commit()

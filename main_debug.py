@@ -25,12 +25,12 @@ def main():
         init_notification_db(db_notifications_file)
         poll_and_save_notifications(db_notifications_file, seen_ids=None)
         # Parameter here is how far back in hours to get notifications
-        poll_and_create_todoist_notification_tasks(2)
+        # poll_and_create_todoist_notification_tasks(2)
 
         # Events
         init_events_db(db_events_file)
         poll_and_save_events(db_events_file, seen_ids=None)
-        poll_and_create_todoist_event_tasks(2)
+        poll_and_create_todoist_event_tasks(1)
 
         time.sleep(60)
 

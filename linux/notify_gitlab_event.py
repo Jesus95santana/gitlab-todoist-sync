@@ -1,7 +1,7 @@
 import subprocess
 
 
-def notify_gitlab_event():
+def notify_gitlab_event(description):
     # Play notification sound
     try:
         subprocess.Popen(["paplay", "/usr/share/sounds/freedesktop/stereo/complete.oga"])
@@ -17,6 +17,6 @@ def notify_gitlab_event():
 
     # Show desktop notification (title only)
     try:
-        subprocess.Popen(["notify-send", "New GitLab Notification"])
+        subprocess.Popen(["notify-send", "GitLab", description])
     except FileNotFoundError:
         print("notify-send is not installed or not available in this environment.")

@@ -75,18 +75,18 @@ def poll_and_create_todoist_event_tasks(TimeHours):
 
         # ---- Only handle USER notes (not system) ----
         if note_data.get("system", False):
-            # System note: skip
             continue
 
         pretty_time = prettify_timestamp(created_at)
-        thread_label = "THREAD" if is_thread else "COMMENT"
+        # FIXED: explicit bool cast for labeling
+        thread_label = "THREAD" if bool(is_thread) else "COMMENT"
         kind_label = "MR" if kind == "mr" else "ISSUE"
 
         # Task title: concise, just meta and branch/project
         content = f"[{kind_label}][{thread_label}] {project_name}"
 
         # Task description: everything else, keep markdown/code formatting
-        description = f"{parent_title}:\n{body}\n[{pretty_time}]"
+        description = f"[{pretty_time}]\n{parent_title}\n{body}"
 
         # --- Branch label logic ---
         branch_only = extract_branch_name(parent_title, body)
@@ -100,9 +100,8 @@ def poll_and_create_todoist_event_tasks(TimeHours):
             if label:
                 label_names = [branch_name]
 
-        # Only create Todoist task for user notes
-        task = create_task(content=content, project_id=project_id, priority=4 if is_thread else 3, description=description, labels=label_names)
-        notify_gitlab_event()
+        task = create_task(content=content, project_id=project_id, priority=4 if bool(is_thread) else 3, description=description, labels=label_names)
+        notify_gitlab_event("New Event")
         print(f"Created Todoist task for event {event_id} (label: {branch_name if branch_name else 'none'})")
 
         # Mark as processed

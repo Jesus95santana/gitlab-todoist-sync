@@ -49,7 +49,7 @@ def poll_and_create_todoist_tasks(TimeHours):
             project_id=project_id,
             priority=3,
         )
-        notify_gitlab_event()
+        notify_gitlab_event("New Notification")
         print(f"Created Todoist task for event {event_id}")
 
         # Mark as processed

@@ -7,6 +7,8 @@ from gitlab.connection import get_gitlab_headers, get_gitlab_url
 def save_event(note, project, kind, parent_title, db_file):
     conn = sqlite3.connect(db_file)
     c = conn.cursor()
+    # Use the exact GitLab API logic
+    is_thread = int(note.get("type") == "DiscussionNote")
     c.execute(
         """
         INSERT OR IGNORE INTO events
@@ -20,7 +22,7 @@ def save_event(note, project, kind, parent_title, db_file):
             parent_title,
             note["author"]["username"],
             note["body"],
-            int(bool(note.get("discussion_id") and note.get("position"))),
+            is_thread,
             note["created_at"],
             json.dumps(note),
         ),

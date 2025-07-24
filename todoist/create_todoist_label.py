@@ -1,7 +1,4 @@
-import os
-from todoist_api_python.api import TodoistAPI
-
-api = TodoistAPI(os.getenv("TODOIST_TOKEN"))
+from .connection import api
 
 
 def get_label_by_name(name):

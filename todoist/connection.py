@@ -1,10 +1,10 @@
 import os
 from dotenv import load_dotenv
+from todoist_api_python.api import TodoistAPI
 
+load_dotenv()
+_token = os.getenv("TODOIST_TOKEN")
+if not _token:
+    raise Exception("Missing TODOIST_TOKEN in environment variables.")
 
-def get_todoist_headers():
-    load_dotenv()
-    token = os.getenv("TODOIST_TOKEN")
-    if not token:
-        raise Exception("Missing TODOIST_TOKEN in environment variables.")
-    return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+api = TodoistAPI(_token)

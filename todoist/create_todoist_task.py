@@ -1,5 +1,4 @@
-import requests
-from .connection import get_todoist_headers
+from .connection import api
 
 
 def create_task(
@@ -10,24 +9,19 @@ def create_task(
     due_date=None,
     description=None,
     assignee_id=None,
+    parent_id=None,
 ):
-    url = "https://api.todoist.com/rest/v2/tasks"
-    headers = get_todoist_headers()
-    data = {
-        "content": content,
-        "project_id": project_id,
-    }
-    if labels:
-        data["labels"] = labels
-    if priority:
-        data["priority"] = priority
-    if due_date:
-        data["due_date"] = due_date
-    if description:
-        data["description"] = description
-    if assignee_id:
-        data["assignee_id"] = assignee_id
-
-    resp = requests.post(url, headers=headers, json=data)
-    resp.raise_for_status()
-    return resp.json()
+    """
+    Creates a Todoist task (or subtask if parent_id is given) using the Todoist Python SDK.
+    Returns the Task object.
+    """
+    return api.add_task(
+        content=content,
+        project_id=project_id,
+        labels=labels,
+        priority=priority,
+        due_date=due_date,
+        description=description,
+        assignee_id=assignee_id,
+        parent_id=parent_id,
+    )

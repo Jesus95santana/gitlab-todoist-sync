@@ -3,8 +3,8 @@ import sqlite3
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
-from .create_todoist_task import create_task
 from .create_todoist_project import get_project_by_name, create_project
+from .connection import api  # Import the SDK object
 from linux.notify_gitlab_event import notify_gitlab_event
 
 load_dotenv()
@@ -12,9 +12,7 @@ load_dotenv()
 
 def prettify_timestamp(timestr):
     try:
-        # Parse UTC time
         dt = datetime.fromisoformat(timestr.replace("Z", "+00:00"))
-        # Convert to New York time (handles EST/EDT)
         dt = dt.astimezone(ZoneInfo("America/New_York"))
         return dt.strftime("%-m/%-d/%y %-I:%M%p %Z")
     except Exception:
@@ -29,13 +27,15 @@ def poll_and_create_todoist_tasks(TimeHours):
     project = get_project_by_name(project_name)
     if not project:
         project = create_project(project_name)
-    project_id = project["id"]
+    project_id = project.id  # Attribute access, NOT ["id"]
 
-    # Connect to DB and select notifications from last hour
     conn = sqlite3.connect(db_file)
     c = conn.cursor()
     one_hour_ago = (datetime.now(timezone.utc) - timedelta(hours=TimeHours)).isoformat()
-    c.execute("SELECT id, project, user, action, target, time FROM events WHERE time >= ? AND processed=0 ORDER BY time ASC", (one_hour_ago,))
+    c.execute(
+        "SELECT id, project, user, action, target, time FROM events WHERE time >= ? AND processed=0 ORDER BY time ASC",
+        (one_hour_ago,),
+    )
     rows = c.fetchall()
 
     print(f"Found {len(rows)} unprocessed notification(s) in the last {TimeHours} hour(s).")
@@ -44,7 +44,7 @@ def poll_and_create_todoist_tasks(TimeHours):
         event_id, project_name, user, action, target, event_time = row
         pretty_time = prettify_timestamp(event_time)
         content = f"{project_name}: {user} {action} {target} [{pretty_time}]"
-        task = create_task(
+        task = api.add_task(
             content=content,
             project_id=project_id,
             priority=3,

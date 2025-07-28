@@ -1,4 +1,12 @@
+import os
+from dotenv import load_dotenv
 import sqlite3
+
+# Load .env file
+load_dotenv()
+
+# Get the absolute path from the env variable
+db_file = os.getenv("GITLAB_NOTIFICATIONS_DB_FILE")
 
 
 def init_db(db_file):

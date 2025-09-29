@@ -22,6 +22,7 @@ def init_db(db_file):
             body TEXT,
             is_thread INTEGER, -- 0 = comment, 1 = thread
             created_at TEXT,
+            branch TEXT,       -- New column for branch name
             json_blob TEXT,
             processed INTEGER DEFAULT 0
         )

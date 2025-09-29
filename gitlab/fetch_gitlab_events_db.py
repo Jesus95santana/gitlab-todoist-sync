@@ -4,7 +4,7 @@ import json
 from gitlab.connection import get_gitlab_headers, get_gitlab_url
 
 
-def save_event(note, project, kind, parent_title, db_file):
+def save_event(note, project, kind, parent_title, branch, db_file):
     conn = sqlite3.connect(db_file)
     c = conn.cursor()
     # Use the exact GitLab API logic
@@ -12,8 +12,8 @@ def save_event(note, project, kind, parent_title, db_file):
     c.execute(
         """
         INSERT OR IGNORE INTO events
-        (id, project, kind, parent_title, author, body, is_thread, created_at, json_blob)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (id, project, kind, parent_title, author, body, branch, is_thread, created_at, json_blob)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             note["id"],
@@ -22,6 +22,7 @@ def save_event(note, project, kind, parent_title, db_file):
             parent_title,
             note["author"]["username"],
             note["body"],
+            branch,
             is_thread,
             note["created_at"],
             json.dumps(note),
@@ -106,7 +107,7 @@ def poll_once_and_save_events(db_file, seen_ids=None):
             for note in notes:
                 # Only allow user notes (not system notes)
                 if note["id"] not in seen_ids[key] and not note.get("system", False):
-                    save_event(note, project, "mr", mr["title"], db_file)
+                    save_event(note, project, "mr", mr["title"], mr.get("source_branch"), db_file)
                     new_events.append((note, project, "mr", mr["title"]))
                     seen_ids[key].add(note["id"])
         # Issues
@@ -118,7 +119,7 @@ def poll_once_and_save_events(db_file, seen_ids=None):
             for note in notes:
                 # Only allow user notes (not system notes)
                 if note["id"] not in seen_ids[key] and not note.get("system", False):
-                    save_event(note, project, "issue", issue["title"], db_file)
+                    save_event(note, project, "issue", issue["title"], None, db_file)
                     new_events.append((note, project, "issue", issue["title"]))
                     seen_ids[key].add(note["id"])
     return new_events

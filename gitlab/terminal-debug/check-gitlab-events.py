@@ -74,6 +74,7 @@ def main():
                 for mr in mrs:
                     notes = get_mr_notes(project["id"], mr["iid"])
                     sid = seen_note_ids[(project["id"], "mr")]
+                    branch_name = mr.get("source_branch", "unknown-branch")
                     for note in notes:
                         # Only user-generated notes (ignore system=True)
                         if note["id"] not in sid and not note.get("system", False):
@@ -82,7 +83,8 @@ def main():
                                 # Is it a thread (DiscussionNote) or just a comment?
                                 is_thread = note.get("type") == "DiscussionNote"
                                 print(
-                                    f"[MR][{project['path_with_namespace']}] [{mr['title']}] [{note['created_at']}] {note['author']['username']}: "
+                                    f"[MR][{project['path_with_namespace']}] [{mr['title']}] [branch: {branch_name}] "
+                                    f"[{note['created_at']}] {note['author']['username']}: "
                                     f"{'THREAD' if is_thread else 'COMMENT'} - {note['body']}"
                                 )
                             sid.add(note["id"])

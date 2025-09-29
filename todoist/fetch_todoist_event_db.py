@@ -47,7 +47,7 @@ def poll_and_create_todoist_event_tasks(TimeHours):
     time_limit = (datetime.now(timezone.utc) - timedelta(hours=TimeHours)).isoformat()
     c.execute(
         """
-        SELECT id, project, kind, parent_title, author, is_thread, created_at, body, json_blob
+        SELECT id, project, kind, parent_title, author, is_thread, created_at, body, branch, json_blob
         FROM events
         WHERE created_at >= ? AND processed=0
         ORDER BY created_at ASC
@@ -59,7 +59,7 @@ def poll_and_create_todoist_event_tasks(TimeHours):
     print(f"Found {len(rows)} unprocessed event(s) in the last {TimeHours} hour(s).")
 
     for row in rows:
-        event_id, project_name, kind, parent_title, author, is_thread, created_at, body, json_blob = row
+        event_id, project_name, kind, parent_title, author, is_thread, created_at, body, branch, json_blob = row
 
         note_data = {}
         try:
@@ -73,11 +73,10 @@ def poll_and_create_todoist_event_tasks(TimeHours):
         pretty_time = prettify_timestamp(created_at)
         thread_label = "THREAD" if bool(is_thread) else "COMMENT"
         kind_label = "MR" if kind == "mr" else "ISSUE"
-        content = f"[{kind_label}][{thread_label}] {project_name}"
-        description = f"[{pretty_time}]\n{parent_title}\n{body}"
+        content = f"{branch}"
+        description = f"[{pretty_time}]\n[{kind_label}][{thread_label}]\n{parent_title}\n{body}"
 
-        branch_only = extract_branch_name(parent_title, body)
-        branch_name = f"{project_name}:{branch_only}" if branch_only else None
+        branch_name = f"{branch}"
 
         label_names = []
         if branch_name and branch_name.strip() and not branch_name.strip().isdigit():
